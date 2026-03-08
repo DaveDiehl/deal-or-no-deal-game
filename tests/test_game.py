@@ -1,5 +1,6 @@
 import pytest
 from src.game import GameBoard, GameController
+from src.input_handler import InputHandler
 
 STANDARD_AMOUNTS = {
     0.01, 1, 5, 10, 25, 50, 75, 100, 200, 300, 400, 500,
@@ -307,3 +308,97 @@ def test_controller_both_case_values_available_at_swap():
     play_through_rounds(gc, 9)
     assert gc.board.player_case is not None
     assert len(gc.board.briefcases) == 1
+
+
+# ---------------------------------------------------------------------------
+# InputHandler tests
+# ---------------------------------------------------------------------------
+
+def test_input_valid_case_number(monkeypatch):
+    handler = InputHandler()
+    monkeypatch.setattr("builtins.input", lambda _="": "5")
+    result = handler.prompt_case_number("Pick a case: ", valid_numbers=set(range(1, 27)))
+    assert result == 5
+
+
+def test_input_non_integer_retries(monkeypatch):
+    responses = iter(["abc", "3"])
+    handler = InputHandler()
+    monkeypatch.setattr("builtins.input", lambda _="": next(responses))
+    result = handler.prompt_case_number("Pick a case: ", valid_numbers=set(range(1, 27)))
+    assert result == 3
+
+
+def test_input_out_of_range_retries(monkeypatch):
+    responses = iter(["0", "27", "10"])
+    handler = InputHandler()
+    monkeypatch.setattr("builtins.input", lambda _="": next(responses))
+    result = handler.prompt_case_number("Pick a case: ", valid_numbers=set(range(1, 27)))
+    assert result == 10
+
+
+def test_input_case_not_in_valid_set_retries(monkeypatch):
+    # Case 5 already opened — not in valid set
+    responses = iter(["5", "7"])
+    handler = InputHandler()
+    monkeypatch.setattr("builtins.input", lambda _="": next(responses))
+    result = handler.prompt_case_number("Pick a case: ", valid_numbers={7, 8, 9})
+    assert result == 7
+
+
+def test_input_deal_accepted(monkeypatch):
+    handler = InputHandler()
+    monkeypatch.setattr("builtins.input", lambda _="": "deal")
+    result = handler.prompt_deal_or_no_deal()
+    assert result == "deal"
+
+
+def test_input_no_deal_accepted(monkeypatch):
+    handler = InputHandler()
+    monkeypatch.setattr("builtins.input", lambda _="": "no deal")
+    result = handler.prompt_deal_or_no_deal()
+    assert result == "no deal"
+
+
+def test_input_deal_case_insensitive(monkeypatch):
+    handler = InputHandler()
+    monkeypatch.setattr("builtins.input", lambda _="": "DEAL")
+    result = handler.prompt_deal_or_no_deal()
+    assert result == "deal"
+
+
+def test_input_invalid_deal_retries(monkeypatch):
+    responses = iter(["yes", "maybe", "deal"])
+    handler = InputHandler()
+    monkeypatch.setattr("builtins.input", lambda _="": next(responses))
+    result = handler.prompt_deal_or_no_deal()
+    assert result == "deal"
+
+
+def test_input_keep_accepted(monkeypatch):
+    handler = InputHandler()
+    monkeypatch.setattr("builtins.input", lambda _="": "keep")
+    result = handler.prompt_swap_or_keep()
+    assert result == "keep"
+
+
+def test_input_swap_accepted(monkeypatch):
+    handler = InputHandler()
+    monkeypatch.setattr("builtins.input", lambda _="": "swap")
+    result = handler.prompt_swap_or_keep()
+    assert result == "swap"
+
+
+def test_input_swap_case_insensitive(monkeypatch):
+    handler = InputHandler()
+    monkeypatch.setattr("builtins.input", lambda _="": "SWAP")
+    result = handler.prompt_swap_or_keep()
+    assert result == "swap"
+
+
+def test_input_invalid_swap_retries(monkeypatch):
+    responses = iter(["hold", "switch", "keep"])
+    handler = InputHandler()
+    monkeypatch.setattr("builtins.input", lambda _="": next(responses))
+    result = handler.prompt_swap_or_keep()
+    assert result == "keep"
