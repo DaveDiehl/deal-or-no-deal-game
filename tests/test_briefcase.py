@@ -24,7 +24,7 @@ def test_briefcase_not_opened_by_default():
     assert b.is_opened is False
 
 
-def test_briefcase_open_twice_raises():
+def test_briefcase_open_twice_raises_value_error():
     b = Briefcase(7, 750)
     b.open()
     with pytest.raises(ValueError):
