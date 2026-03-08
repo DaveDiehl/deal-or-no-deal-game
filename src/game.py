@@ -3,6 +3,7 @@ import random
 from src.briefcase import Briefcase
 from src.banker import Banker
 from src.display import Display
+from src.proveout import Proveout
 
 STANDARD_AMOUNTS = [
     0.01, 1, 5, 10, 25, 50, 75, 100, 200, 300, 400, 500,
@@ -53,6 +54,7 @@ class GameController:
         self._cases_opened_this_round = 0
         self.current_offer: int | None = None
         self.winnings: float | None = None
+        self._deal_round: int | None = None
 
     # --- State helpers ---
 
@@ -83,8 +85,19 @@ class GameController:
     def deal(self) -> None:
         if self.state != "DEAL_OR_NO_DEAL":
             raise ValueError("Cannot take a deal in current state.")
+        self._deal_round = self._round
         self.winnings = self.current_offer
         self.state = "DEAL_ACCEPTED"
+
+    def create_proveout(self) -> "Proveout":
+        if self.state != "DEAL_ACCEPTED":
+            raise ValueError("Proveout is only available after a deal has been accepted.")
+        return Proveout(
+            deal_amount=self.winnings,
+            player_case=self.board.player_case,
+            remaining_board_cases=self.board.briefcases,
+            deal_round=self._deal_round,
+        )
 
     def no_deal(self) -> None:
         if self.state != "DEAL_OR_NO_DEAL":

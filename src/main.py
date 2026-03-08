@@ -65,10 +65,31 @@ def run():
         # --- GAME OVER ---
         print(gc.display.show_final_result(gc.winnings))
 
-        # --- PROVEOUT STUB (full implementation in feature/proveout) ---
+        # --- PROVEOUT ---
         if gc.state == "DEAL_ACCEPTED":
             print(gc.display.show_proveout_header())
-            print("  (Proveout mode coming soon...)\n")
+            if gc._deal_round <= 8:
+                proveout = gc.create_proveout()
+                for round_data in proveout.get_proveout_rounds()[:-1]:
+                    print(gc.display.show_proveout_round(
+                        round_data["round_number"],
+                        round_data["cases_opened"],
+                        round_data["banker_offer"],
+                    ))
+                final = proveout.get_proveout_rounds()[-1]
+                remaining_board = [c for c in final["cases_opened"] if c is not proveout.player_case]
+                if remaining_board:
+                    amt = remaining_board[0].amount
+                    amt_str = f"${int(amt):,}" if amt == int(amt) else f"${amt}"
+                    print(f"\n  Last case (Case #{remaining_board[0].number}) contained: {amt_str}")
+                print(gc.display.show_proveout_final(gc.winnings, proveout.player_case.amount))
+            else:
+                # Deal accepted on offer 9 — just reveal the last board case and player's case
+                other_case = list(gc.board.briefcases.values())[0]
+                amt = other_case.amount
+                amt_str = f"${int(amt):,}" if amt == int(amt) else f"${amt}"
+                print(f"\n  The other case (Case #{other_case.number}) contained: {amt_str}")
+                print(gc.display.show_proveout_final(gc.winnings, gc.board.player_case.amount))
 
     except KeyboardInterrupt:
         print("\n\n  Thanks for playing Deal or No Deal. Goodbye!\n")
