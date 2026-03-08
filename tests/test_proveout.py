@@ -248,3 +248,38 @@ def test_controller_deal_round_9_raises_for_proveout():
     # Deal accepted at round 9 — proveout not valid
     with pytest.raises(ValueError):
         gc.create_proveout()
+
+
+# ---------------------------------------------------------------------------
+# Edge cases — explicit round 1 and round 8 boundaries
+# ---------------------------------------------------------------------------
+
+def test_proveout_edge_round_1_plays_8_proveout_rounds():
+    """Deal at round 1 → 8 proveout rounds (2-9) + final entry = 9 total."""
+    proveout, _ = make_proveout_at_round(1)
+    rounds = proveout.get_proveout_rounds()
+    proveout_rounds = [r for r in rounds if r["round_number"] is not None]
+    assert len(proveout_rounds) == 8
+    assert [r["round_number"] for r in proveout_rounds] == list(range(2, 10))
+
+
+def test_proveout_edge_round_8_plays_1_proveout_round():
+    """Deal at round 8 → 1 proveout round (9) + final entry = 2 total."""
+    proveout, _ = make_proveout_at_round(8)
+    rounds = proveout.get_proveout_rounds()
+    proveout_rounds = [r for r in rounds if r["round_number"] is not None]
+    assert len(proveout_rounds) == 1
+    assert proveout_rounds[0]["round_number"] == 9
+
+
+def test_proveout_verdict_bad_deal_explicit():
+    """BAD DEAL: deal amount is much less than player's case value."""
+    player_case = Briefcase(13, 1000000)
+    remaining = {2: Briefcase(2, 500), 3: Briefcase(3, 100)}
+    proveout = Proveout(
+        deal_amount=100,
+        player_case=player_case,
+        remaining_board_cases=remaining,
+        deal_round=8,
+    )
+    assert proveout.get_verdict() == "BAD DEAL"
