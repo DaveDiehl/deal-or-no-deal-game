@@ -402,3 +402,52 @@ def test_input_invalid_swap_retries(monkeypatch):
     monkeypatch.setattr("builtins.input", lambda _="": next(responses))
     result = handler.prompt_swap_or_keep()
     assert result == "keep"
+
+
+# ---------------------------------------------------------------------------
+# Edge cases
+# ---------------------------------------------------------------------------
+
+FIXED_AMOUNTS = [
+    0.01, 1, 5, 10, 25, 50, 75, 100, 200, 300, 400, 500,
+    750, 1000, 5000, 10000, 25000, 50000, 75000, 100000,
+    200000, 300000, 400000, 500000, 750000, 1000000,
+]
+
+
+def test_one_board_case_remains_after_all_rounds():
+    """After 9 rounds, exactly 1 board case + player case remain (swap-or-keep)."""
+    gc = make_controller()
+    advance_to_open_cases(gc)
+    play_through_rounds(gc, 9)
+    assert gc.state == "SWAP_OR_KEEP"
+    assert len(gc.board.briefcases) == 1
+    assert gc.board.player_case is not None
+
+
+def test_swap_wins_million(monkeypatch):
+    """Player swaps and wins $1,000,000 from the other case."""
+    import random
+    monkeypatch.setattr(random, "sample", lambda pop, k: list(FIXED_AMOUNTS))
+    gc = make_controller()
+    advance_to_open_cases(gc)  # selects lowest-numbered case (case 1 → $0.01)
+    play_through_rounds(gc, 9)
+    # case 26 ($1,000,000) is the last board case
+    gc.swap()
+    assert gc.winnings == 1000000
+    assert gc.state == "GAME_OVER"
+
+
+def test_keep_when_other_case_had_penny(monkeypatch):
+    """Player keeps their case; the other board case held $0.01."""
+    import random
+    # Reverse amounts so case 1 has $1,000,000 and case 26 has $0.01
+    reversed_amounts = list(reversed(FIXED_AMOUNTS))
+    monkeypatch.setattr(random, "sample", lambda pop, k: reversed_amounts)
+    gc = make_controller()
+    advance_to_open_cases(gc)  # selects case 1 → $1,000,000
+    play_through_rounds(gc, 9)
+    # case 26 ($0.01) is the last board case
+    gc.keep()
+    assert gc.winnings == 1000000
+    assert gc.state == "GAME_OVER"

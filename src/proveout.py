@@ -7,10 +7,25 @@ CASES_PER_ROUND = [6, 5, 4, 3, 2, 1, 1, 1, 1]
 class Proveout:
     """
     Simulates what would have happened if the player had said NO DEAL.
-    Only valid for deals accepted on offers 1-8.
+
+    Only valid for deals accepted on offers 1-8. The proveout auto-plays
+    the remaining rounds, opening cases in ascending case-number order
+    (deterministic — no player choice) and computing hypothetical banker
+    offers using the correct per-round scaling factors.
     """
 
     def __init__(self, deal_amount, player_case, remaining_board_cases, deal_round):
+        """
+        Args:
+            deal_amount: The dollar amount the player accepted.
+            player_case: The player's Briefcase.
+            remaining_board_cases: Dict mapping case number → Briefcase for
+                                   all cases still on the board at deal time.
+            deal_round: Round number (1-8) when the deal was accepted.
+
+        Raises:
+            ValueError: If deal_round is None or greater than 8.
+        """
         if deal_round is None or deal_round > 8:
             raise ValueError(
                 "Proveout is only available for deals accepted on offers 1-8."
@@ -22,6 +37,20 @@ class Proveout:
         self._rounds = None
 
     def get_proveout_rounds(self) -> list:
+        """
+        Auto-play all remaining rounds and return a list of round summaries.
+
+        Each entry (except the last) is a dict with keys:
+            - 'round_number': int
+            - 'cases_opened': list of Briefcase
+            - 'banker_offer': int (hypothetical offer)
+
+        The final entry has round_number=None and banker_offer=None, and
+        cases_opened contains any remaining board cases plus the player's case.
+
+        Returns:
+            List of round summary dicts.
+        """
         if self._rounds is not None:
             return self._rounds
 
@@ -63,6 +92,12 @@ class Proveout:
         return rounds
 
     def get_verdict(self) -> str:
+        """
+        Compare the accepted deal to the player's case value.
+
+        Returns:
+            'GOOD DEAL' if deal_amount >= player_case.amount, else 'BAD DEAL'.
+        """
         if self.deal_amount >= self.player_case.amount:
             return "GOOD DEAL"
         return "BAD DEAL"
