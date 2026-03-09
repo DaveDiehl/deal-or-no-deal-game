@@ -192,3 +192,105 @@ def test_show_proveout_final_indicates_good_or_bad_deal():
     result = display.show_proveout_final(deal_amount=50000, case_value=1000000)
     # Case had more — bad deal
     assert any(word in result.lower() for word in ["bad", "less", "better", "missed", "worth"])
+
+
+# ---------------------------------------------------------------------------
+# Edge cases — dollar formatting
+# ---------------------------------------------------------------------------
+
+def test_show_final_result_penny():
+    display = Display()
+    result = display.show_final_result(0.01)
+    assert "0.01" in result
+
+
+def test_show_final_result_million():
+    display = Display()
+    result = display.show_final_result(1000000)
+    assert "1,000,000" in result
+
+
+def test_show_offer_formats_dollar_and_comma():
+    display = Display()
+    result = display.show_offer(1000000)
+    assert "$1,000,000" in result
+
+
+def test_show_swap_result_formats_million():
+    display = Display()
+    player = make_briefcase(1, 100)
+    other = make_briefcase(26, 1000000)
+    result = display.show_swap_result(player, other, swapped=True)
+    assert "1,000,000" in result
+
+
+def test_show_swap_result_formats_penny():
+    display = Display()
+    player = make_briefcase(1, 1000000)
+    other = make_briefcase(26, 0.01)
+    result = display.show_swap_result(player, other, swapped=False)
+    assert "0.01" in result
+
+
+def test_show_proveout_final_formats_penny():
+    display = Display()
+    result = display.show_proveout_final(deal_amount=50000, case_value=0.01)
+    assert "0.01" in result
+
+
+# ---------------------------------------------------------------------------
+# show_game_summary
+# ---------------------------------------------------------------------------
+
+def test_show_game_summary_contains_player_case_number():
+    display = Display()
+    case = make_briefcase(7, 500000)
+    result = display.show_game_summary(
+        player_case=case, last_offer=42000, took_deal=True, winnings=42000
+    )
+    assert "7" in result
+
+
+def test_show_game_summary_contains_player_case_value():
+    display = Display()
+    case = make_briefcase(7, 500000)
+    result = display.show_game_summary(
+        player_case=case, last_offer=42000, took_deal=True, winnings=42000
+    )
+    assert "500,000" in result
+
+
+def test_show_game_summary_contains_last_offer():
+    display = Display()
+    case = make_briefcase(3, 100)
+    result = display.show_game_summary(
+        player_case=case, last_offer=75000, took_deal=True, winnings=75000
+    )
+    assert "75,000" in result
+
+
+def test_show_game_summary_shows_deal_chosen():
+    display = Display()
+    case = make_briefcase(1, 100)
+    result = display.show_game_summary(
+        player_case=case, last_offer=5000, took_deal=True, winnings=5000
+    )
+    assert "deal" in result.lower()
+
+
+def test_show_game_summary_shows_no_deal_path():
+    display = Display()
+    case = make_briefcase(1, 1000000)
+    result = display.show_game_summary(
+        player_case=case, last_offer=750000, took_deal=False, winnings=1000000
+    )
+    assert "no deal" in result.lower() or "swap" in result.lower() or "keep" in result.lower()
+
+
+def test_show_game_summary_contains_winnings():
+    display = Display()
+    case = make_briefcase(5, 200)
+    result = display.show_game_summary(
+        player_case=case, last_offer=1000, took_deal=False, winnings=1000000
+    )
+    assert "1,000,000" in result
